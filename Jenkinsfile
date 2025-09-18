@@ -27,5 +27,23 @@ pipeline {
                 '''
             }
         }
+        stage('Test on Windows') {
+            when {
+                // Ensure this stage only runs on Linux agents
+                expression {
+                    return isUnix() == true
+                }
+            }
+            steps {
+                powershell '''
+                   if (Test-Path -Path "index.html") {
+                        Write-Host "index.html exists."
+                    } else {
+                        Write-Host "index.html does not exist."
+                        exit 1
+                    }
+                '''  
+            }
+        }
     }
 }
