@@ -31,7 +31,7 @@ pipeline {
             when {
                 // Ensure this stage only runs on Linux agents
                 expression {
-                    return isUnix() == true
+                    return isUnix() == false
                 }
             }
             steps {
