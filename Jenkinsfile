@@ -36,10 +36,10 @@ pipeline {
             }
             steps {
                 powershell '''
-                   if (Test-Path -Path "index.html") {
-                        Write-Host "index.html exists."
+                   if (Test-Path -Path "build/index.html") {
+                        Write-Host "index.html exists into build folder."
                     } else {
-                        Write-Host "index.html does not exist."
+                        Write-Host "index.html does not exist into build folder."
                         exit 1
                     }
 
