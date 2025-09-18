@@ -2,16 +2,16 @@ pipeline {
     agent any
 
     stages {
-        stage('Hello') {
+        stage('build') {
             steps {
                 echo 'Without Docker - Pipeline'
-                bat 'dir /s'
+                node --version
+                npm --version
+                npm ci
+                bat 'dir'
+                npm run build
+                bat 'dir'
             }
-        }
-    }
-    post {
-        always {
-            cleanWs()       
         }
     }
 }
