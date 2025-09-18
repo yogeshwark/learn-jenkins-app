@@ -17,10 +17,13 @@ pipeline {
                     echo 'Build without Docker - Pipeline'
                     node --version
                     npm --version
+                    echo 'Preparing Build Environment'
                     npm ci
-                    bat 'dir'
+                    echo 'Before build'
+                    dir
                     npm run build
-                    bat 'dir'
+                    echo 'After build'
+                    dir
                 '''
             }
         }
