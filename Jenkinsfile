@@ -42,6 +42,8 @@ pipeline {
                         Write-Host "index.html does not exist."
                         exit 1
                     }
+
+                    npm test
                 '''  
             }
         }
