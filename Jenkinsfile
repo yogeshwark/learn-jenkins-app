@@ -5,7 +5,7 @@ pipeline {
             when {
                 // Ensure this stage only runs on Windows agents
                 expression {
-                    return isUnix() == false
+                    return isUnix() == true
                 }
             }
             steps {
@@ -31,7 +31,7 @@ pipeline {
             when {
                 // Ensure this stage only runs on Linux agents
                 expression {
-                    return isUnix() == false
+                    return isUnix() == true
                 }
             }
             steps {
