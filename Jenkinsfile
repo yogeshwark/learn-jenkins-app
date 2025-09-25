@@ -55,8 +55,9 @@ pipeline {
                             sh '''
                                 npm install serve
                                 npx serve -s build -l 3000 &
-                                SERVER_PID=$!
-                                npm run test:e2e
+                                # SERVER_PID=$!
+                                sleep 10
+                                npx playwright test
                                 # kill $SERVER_PID
                             '''
                         }
@@ -65,7 +66,8 @@ pipeline {
                         bat """
                             npm install serve
                             start /B npx serve -s build -l 3000
-                            npm run test:e2e
+                            sleep 10
+                            npx playwright test
                             REM Assuming Jenkins or the test runner will clean up the background server process.
                             REM If not, a more explicit kill command would be needed, e.g., taskkill /F /IM node.exe /FI "LISTENERS eq 3000"
                         """
