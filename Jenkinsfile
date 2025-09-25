@@ -2,53 +2,72 @@ pipeline {
     agent any
 
     stages {
-        stage('Build and Test') {
+        stage('Build') {
             steps {
                 script {
                     if (isUnix()) {
-                        // This block runs on Linux agents using a Docker container
                         echo "--- Running build on a Linux Docker agent ---"
                         docker.image('node:18-alpine').inside {
                             sh '''
-                                echo 'Preparing Build Environment'
+                                echo "--- Running in the environment ---"
                                 node --version
                                 npm --version
                                 npm ci
-                                echo 'Before build'
-                                ls -la
                                 npm run build
-                                echo 'After build'
-                                ls -la
-                                
-                                if [ ! -f "build/index.html" ]; then
-                                    echo "index.html does not exist into build folder."
-                                    exit 1
-                                fi
-                                echo "index.html exists into build folder."
-                                npm test
+                                echo "--- Build is successful ---"
                             '''
                         }
                     } else {
-                        // This block runs on Windows agents directly on the host machine
                         echo "--- Running build on the Windows host machine ---"
                         bat """
-                            echo 'Preparing Build Environment'
+                            echo "--- Running in the environment ---"
                             node --version
                             npm --version
                             npm ci
-                            echo 'Before build'
-                            dir
                             npm run build
-                            echo 'After build'
-                            dir
+                             echo "--- Build is successful ---"
                         """
+                    }
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        echo "--- Running unit tests on a Linux Docker agent ---"
+                        docker.image('node:18-alpine').inside {
+                            sh 'npm test'
+                        }
+                    } else {
+                        echo "--- Running unit tests on the Windows host machine ---"
+                        bat 'npm test'
+                    }
+                }
+            }
+        }
+        stage('E2E Test') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        echo "--- Running E2E tests on a Linux Docker agent ---"
+                        docker.image('mcr.microsoft.com/playwright/node:18-focal').inside {
+                            sh '''
+                                npm install serve
+                                npx serve -s build -l 3000 &
+                                SERVER_PID=$!
+                                npm run test:e2e
+                                # kill $SERVER_PID
+                            '''
+                        }
+                    } else {
+                        echo "--- Running E2E tests on the Windows host machine ---"
                         bat """
-                            if not exist "build\\index.html" (
-                                echo "index.html does not exist into build folder."
-                                exit /b 1
-                            )
-                            echo "index.html exists into build folder."
-                            npm test
+                            npm install serve
+                            start /B npx serve -s build -l 3000
+                            npm run test:e2e
+                            REM Assuming Jenkins or the test runner will clean up the background server process.
+                            REM If not, a more explicit kill command would be needed, e.g., taskkill /F /IM node.exe /FI "LISTENERS eq 3000"
                         """
                     }
                 }
