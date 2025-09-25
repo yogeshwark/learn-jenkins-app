@@ -51,7 +51,7 @@ pipeline {
                 script {
                     if (isUnix()) {
                         echo "--- Running E2E tests on a Linux Docker agent ---"
-                        docker.image('mcr.microsoft.com/playwright:v1.50.0-noble').inside {
+                        docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
                             sh '''
                                 npm install serve
                                 npx serve -s build -l 3000 &
