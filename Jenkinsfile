@@ -31,55 +31,64 @@ pipeline {
                 }
             }
         }
-        stage('Test') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        echo "--- Running unit tests on a Linux Docker agent ---"
-                        docker.image('node:18-alpine').inside {
-                            sh 'npm test'
+        stage('Test and E2E Test') {
+            parallel {
+                stage('Test') {
+                    steps {
+                        script {
+                            if (isUnix()) {
+                                echo "--- Running unit tests on a Linux Docker agent ---"
+                                docker.image('node:18-alpine').inside {
+                                    sh 'npm test'
+                                }
+                            } else {
+                                echo "--- Running unit tests on the Windows host machine ---"
+                                bat 'npm test'
+                            }
                         }
-                    } else {
-                        echo "--- Running unit tests on the Windows host machine ---"
-                        bat 'npm test'
+                    }
+                    post {
+                        always {
+                            junit 'jest-results/junit.xml'
+                        }
+                    }
+                }
+                stage('E2E Test') {
+                    steps {
+                        script {
+                            if (isUnix()) {
+                                echo "--- Running E2E tests on a Linux Docker agent ---"
+                                docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
+                                    sh '''
+                                        npm install serve
+                                        npx serve -s build -l 3000 &
+                                        # SERVER_PID=$!
+                                        sleep 10
+                                        npx playwright test
+                                        # kill $SERVER_PID
+                                    '''
+                                }
+                            } else {
+                                echo "--- Running E2E tests on the Windows host machine ---"
+                                bat """
+                                    npm install serve
+                                    start /B npx serve -s build -l 3000
+                                    sleep 10
+                                    npx playwright test
+                                    REM Assuming Jenkins or the test runner will clean up the background server process.
+                                    REM If not, a more explicit kill command would be needed, e.g., taskkill /F /IM node.exe /FI "LISTENERS eq 3000"
+                                """
+                            }
+                        }
+                    }
+
+                    post {
+                        always {
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                        }
                     }
                 }
             }
-        }
-        stage('E2E Test') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        echo "--- Running E2E tests on a Linux Docker agent ---"
-                        docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
-                            sh '''
-                                npm install serve
-                                npx serve -s build -l 3000 &
-                                # SERVER_PID=$!
-                                sleep 10
-                                npx playwright test
-                                # kill $SERVER_PID
-                            '''
-                        }
-                    } else {
-                        echo "--- Running E2E tests on the Windows host machine ---"
-                        bat """
-                            npm install serve
-                            start /B npx serve -s build -l 3000
-                            sleep 10
-                            npx playwright test
-                            REM Assuming Jenkins or the test runner will clean up the background server process.
-                            REM If not, a more explicit kill command would be needed, e.g., taskkill /F /IM node.exe /FI "LISTENERS eq 3000"
-                        """
-                    }
-                }
-            }
-        }
-    }
-    post {
-        always {
-            junit 'jest-results/junit.xml'
-            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
         }
     }
 }
