@@ -1,9 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/alpine
 {
-	"name": "Node.js",
+	// "name": "Node.js",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/javascript-node:18"
+	// "image": "mcr.microsoft.com/devcontainers/javascript-node:18"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
@@ -19,4 +19,18 @@
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
+
+  "name": "My Node.js Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/app",
+  "forwardPorts": [3000],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
 }
