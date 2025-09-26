@@ -90,5 +90,30 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        echo "--- Running deploy on a Linux Docker agent ---"
+                        docker.image('node:18-alpine').inside {
+                            sh '''
+                                echo "--- Checking Netlify CLI version ---"
+                                npm install netlify-cli
+                                npx netlify --version
+                                echo "--- Netlify CLI version checked ---"
+                            '''
+                        }
+                    } else {
+                        echo "--- Running deploy on the Windows host machine ---"
+                        bat """
+                            echo "--- Checking Netlify CLI version ---"
+                            npm install netlify-cli
+                            npx netlify --version
+                            echo "--- Netlify CLI version checked ---"
+                        """
+                    }
+                }
+            }
+        }
     }
 }
