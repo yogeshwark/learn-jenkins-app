@@ -122,21 +122,19 @@ pipeline {
                     }
                 }
                 script {
-                    environment {
-                        CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_STAGE}"
-                    }
                     if (isUnix()) {
                         echo "--- Running E2E tests on a Linux Docker agent for Stage ---"
                         docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
                             sh '''
                                 npm ci
-                                npx playwright test
+                                CI_ENVIRONMENT_URL="${CI_ENVIRONMENT_URL_STAGE}" npx playwright test
                             '''
                         }
                     } else {
                         echo "--- Running E2E tests on the Windows host machine for Stage ---"
                             bat """
                                 npm ci
+                                SET CI_ENVIRONMENT_URL=%CI_ENVIRONMENT_URL_STAGE%
                                 npx playwright test
                             """
                     }
@@ -179,21 +177,19 @@ pipeline {
                     }
                 }
                 script {
-                    environment {
-                        CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_PROD}"
-                    }
                     if (isUnix()) {
                         echo "--- Running Post-Deploy E2E tests on a Linux Docker agent ---"
                         docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
                             sh '''
                                 npm ci
-                                npx playwright test
+                                CI_ENVIRONMENT_URL="${CI_ENVIRONMENT_URL_PROD}" npx playwright test
                             '''
                         }
                     } else {
                         echo "--- Running Post-Deploy E2E tests on the Windows host machine ---"
                             bat """
                                 npm ci
+                                SET CI_ENVIRONMENT_URL=%CI_ENVIRONMENT_URL_PROD%
                                 npx playwright test
                             """
                     }
