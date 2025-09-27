@@ -13,7 +13,7 @@ COPY . .
 # Add any other dev tools, for example:
 # RUN npm install -g typescript
 RUN npm install serve
-RUN npm install netlify-cli
+# netlify-cli is now a dev dependency, installed via npm ci in Stage 1
 
 # Define the command to run when the container starts
 # CMD ["npm", "run", "dev"]
