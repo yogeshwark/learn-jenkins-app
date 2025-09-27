@@ -5,32 +5,16 @@ pipeline {
         NETLIFY_SITE_ID = '2e0f6ad8-8942-406d-a56f-b34feb065333'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
         REACT_APP_VERSION = "1.0.0-${BUILD_ID}"
-        CUSTOM_DOCKER_IMAGE = "my-app-dev:${BUILD_ID}" // Define a tag for your custom image
+        CUSTOM_DOCKER_IMAGE = "my-app-dev"
     }
 
     stages {
-        stage('Prepare Environment') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        echo "--- Building custom Docker image from .devcontainer/Dockerfile ---"
-                        // Build the Docker image from the .devcontainer folder
-                        docker.build("${CUSTOM_DOCKER_IMAGE}", "-f learn-jenkins-app/.devcontainer/Dockerfile learn-jenkins-app")
-                    } else {
-                        echo "--- Skipping custom Docker image build on Windows host ---"
-                        // For Windows, you might need a different strategy or skip this if devcontainers are Unix-specific
-                        // Or, if Docker Desktop is available, you could run a bat command to build
-                        // For simplicity, we'll assume Unix agent for custom Docker image build
-                    }
-                }
-            }
-        }
         stage('Build') {
             steps {
                 script {
                     if (isUnix()) {
                         echo "--- Running build on a Linux Docker agent using custom image ---"
-                        docker.image("${CUSTOM_DOCKER_IMAGE}").inside {
+                        docker.image("${CUSTOM_DOCKER_IMAGE}").inside { // Use the image built by the separate pipeline
                             sh '''
                                 echo "--- Running in the environment ---"
                                 node --version
