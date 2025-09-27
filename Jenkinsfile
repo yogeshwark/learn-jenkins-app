@@ -104,40 +104,31 @@ pipeline {
                             sh '''
                                 echo "--- Checking Netlify CLI version ---"
                                 npm install netlify-cli
-                                npx netlify --version
-                                DEPLOY_OUTPUT=$(npx netlify deploy --dir=build --prod --site=$NETLIFLY_SITE_ID --auth=$NETLIFLY_AUTH_TOKEN)
-                                echo "$DEPLOY_OUTPUT"
-                                def deployedUrl = (DEPLOY_OUTPUT =~ /URL:\\s*(.*)/)[0][1]
-                                env.DEPLOYED_URL = deployedUrl
-                                echo "Deployed URL: ${env.DEPLOYED_URL}"
+                                node_modules/.bin/netlify --version
                                 echo "--- Netlify CLI version checked ---"
+                                node_modules/.bin/netlify deploy --dir=build --prod
                                 echo "--- Deployment to Netlify is successful ---"
                             '''
                         }
                     } else {
                         echo "--- Running deploy on the Windows host machine ---"
-                        def deployOutput = bat (script: """
+                        bat (script: """
                             echo "--- Checking Netlify CLI version ---"
                             npm install netlify-cli
-                            npx netlify --version
+                            node_modules/.bin/netlify --version
                             echo "--- Netlify CLI version checked ---"
-                            SET "DEPLOY_OUTPUT_ACCUMULATOR="
-                            FOR /F "tokens=*" %%i IN ('npx netlify deploy --dir=build --prod --site=%NETLIFLY_SITE_ID% --auth=%NETLIFLY_AUTH_TOKEN%') DO (
-                                ECHO %%i
-                                SET "DEPLOY_OUTPUT_ACCUMULATOR=!DEPLOY_OUTPUT_ACCUMULATOR!%%i\n"
-                            )
+                            node_modules/.bin/netlify deploy --dir=build --prod
                             echo "--- Deployment to Netlify is successful ---"
-                            echo "%DEPLOY_OUTPUT_ACCUMULATOR%"
-                        """, returnStdout: true).trim()
-
-                        def deployedUrl = (deployOutput =~ /URL:\\s*(.*)/)[0][1]
-                        env.DEPLOYED_URL = deployedUrl
-                        echo "Deployed URL: ${env.DEPLOYED_URL}"
+                        """
+                        )
                     }
                 }
             }
         }
         stage('Post-Deploy Tests') {
+            environment {
+                CI_ENVIRONMENT_URL = "https://eclectic-pie-67daae.netlify.app"
+            }
             steps {
                 script {
                     if (isUnix()) {
