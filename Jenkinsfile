@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        NETLIFLY_SITE_ID = '2e0f6ad8-8942-406d-a56f-b34feb065333'
-        NETLIFLY_AUTH_TOKEN = credentials('netlify-token')
+        NETLIFY_SITE_ID = '2e0f6ad8-8942-406d-a56f-b34feb065333'
+        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
 
     stages {
@@ -106,7 +106,7 @@ pipeline {
                                 npm install netlify-cli
                                 node_modules/.bin/netlify --version
                                 echo "--- Netlify CLI version checked ---"
-                                node_modules/.bin/netlify deploy --dir=build --prod
+                                node_modules/.bin/netlify deploy --dir=build --prod netlify deploy --prod --site $NETLIFY_SITE_ID --auth $NETLIFY_AUTH_TOKEN
                                 echo "--- Deployment to Netlify is successful ---"
                             '''
                         }
@@ -117,7 +117,7 @@ pipeline {
                             npm install netlify-cli
                             node_modules/.bin/netlify --version
                             echo "--- Netlify CLI version checked ---"
-                            node_modules/.bin/netlify deploy --dir=build --prod
+                            node_modules/.bin/netlify deploy --dir=build --prod NETLIFY_SITE_ID=%NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN%
                             echo "--- Deployment to Netlify is successful ---"
                         """
                         )
@@ -136,14 +136,14 @@ pipeline {
                         docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
                             sh '''
                                 npm ci
-                                npx playwright test --project=chromium --base-url=${DEPLOYED_URL}
+                                npx playwright test
                             '''
                         }
                     } else {
                         echo "--- Running Post-Deploy E2E tests on the Windows host machine ---"
                             bat """
                                 npm ci
-                                npx playwright test --project=chromium --base-url=%DEPLOYED_URL%
+                                npx playwright test
                             """
                     }
                 }
