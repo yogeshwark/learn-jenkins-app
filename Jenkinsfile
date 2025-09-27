@@ -105,7 +105,11 @@ pipeline {
                                 echo "--- Checking Netlify CLI version ---"
                                 npm install netlify-cli
                                 npx netlify --version
-                                npx netlify deploy --dir=build --prod --site=$NETLIFLY_SITE_ID --auth=$NETLIFLY_AUTH_TOKEN
+                                DEPLOY_OUTPUT=$(npx netlify deploy --dir=build --prod --site=$NETLIFLY_SITE_ID --auth=$NETLIFLY_AUTH_TOKEN)
+                                echo "$DEPLOY_OUTPUT"
+                                def deployedUrl = (DEPLOY_OUTPUT =~ /URL:\s*(.*)/)[0][1]
+                                env.DEPLOYED_URL = deployedUrl
+                                echo "Deployed URL: ${env.DEPLOYED_URL}"
                                 echo "--- Netlify CLI version checked ---"
                                 echo "--- Deployment to Netlify is successful ---"
                             '''
@@ -117,10 +121,41 @@ pipeline {
                             npm install netlify-cli
                             npx netlify --version
                             echo "--- Netlify CLI version checked ---"
-                            npx netlify deploy --dir=build --prod --site=$NETLIFLY_SITE_ID --auth=$NETLIFLY_AUTH_TOKEN
+                            FOR /F "tokens=*" %%i IN ('npx netlify deploy --dir=build --prod --site=%NETLIFLY_SITE_ID% --auth=%NETLIFLY_AUTH_TOKEN%') DO (
+                                ECHO %%i
+                                ECHO %%i | findstr /C:"URL:" >nul && FOR /F "tokens=2 delims= " %%j IN ("%%i") DO SET DEPLOYED_URL=%%j
+                            )
+                            env.DEPLOYED_URL = "%DEPLOYED_URL%"
+                            echo "Deployed URL: %DEPLOYED_URL%"
                             echo "--- Deployment to Netlify is successful ---"
                         """
                     }
+                }
+            }
+        }
+        stage('Post-Deploy Tests') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        echo "--- Running Post-Deploy E2E tests on a Linux Docker agent ---"
+                        docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
+                            sh '''
+                                npm ci
+                                npx playwright test --project=chromium --base-url=${DEPLOYED_URL}
+                            '''
+                        }
+                    } else {
+                        echo "--- Running Post-Deploy E2E tests on the Windows host machine ---"
+                            bat """
+                                npm ci
+                                npx playwright test --project=chromium --base-url=%DEPLOYED_URL%
+                            """
+                    }
+                }
+            }
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report-post-deploy', reportFiles: 'index.html', reportName: 'Playwright HTML Report (Post-Deploy)', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
         }
