@@ -119,7 +119,7 @@ pipeline {
 
         stage('E2E Test Stage Environment') {
             environment {
-                CI_ENVIRONMENT_URL = env.CI_ENVIRONMENT_URL_STAGE
+                CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_STAGE}"
             }
             steps {
                 script {
@@ -178,7 +178,7 @@ pipeline {
         }
         stage('Post-Deploy Tests Production') {
             environment {
-                CI_ENVIRONMENT_URL = env.CI_ENVIRONMENT_URL_PROD
+                CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_PROD}"
             }
             steps {
                 script {
