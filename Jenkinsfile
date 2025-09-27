@@ -4,6 +4,7 @@ pipeline {
     environment {
         NETLIFY_SITE_ID = '2e0f6ad8-8942-406d-a56f-b34feb065333'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+        REACT_APP_VERSION = "1.0.0-${BUILD_ID}"
     }
 
     stages {
@@ -18,7 +19,7 @@ pipeline {
                                 node --version
                                 npm --version
                                 npm ci
-                                npm run build
+                                REACT_APP_VERSION=${REACT_APP_VERSION} npm run build
                                 echo "--- Build is successful ---"
                             '''
                         }
@@ -29,6 +30,7 @@ pipeline {
                             node --version
                             npm --version
                             npm ci
+                            SET REACT_APP_VERSION=%REACT_APP_VERSION%
                             npm run build
                              echo "--- Build is successful ---"
                         """
