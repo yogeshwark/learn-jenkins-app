@@ -12,6 +12,8 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 # Add any other dev tools, for example:
 # RUN npm install -g typescript
+RUN npm install serve
+RUN npm install netlify-cli
 
 # Define the command to run when the container starts
 # CMD ["npm", "run", "dev"]

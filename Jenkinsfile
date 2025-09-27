@@ -95,41 +95,90 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+        stage('Deploy Stage Environment') {
             steps {
                 script {
+                    def deployOutput
                     if (isUnix()) {
-                        echo "--- Running deploy on a Linux Docker agent ---"
+                        echo "--- Running stage deploy on a Linux Docker agent ---"
                         docker.image('node:18-alpine').inside {
-                            sh '''
-                                echo "--- Checking Netlify CLI version ---"
-                                npm install netlify-cli
-                                node_modules/.bin/netlify --version
-                                echo "--- Netlify CLI version checked ---"
-                                # node_modules/.bin/netlify deploy --dir=build --prod --site $NETLIFY_SITE_ID --auth $NETLIFY_AUTH_TOKEN
-                                node_modules/.bin/netlify deploy --prod --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
-
-                                echo "--- Deployment to Netlify is successful ---"
-                            '''
+                            sh 'npm install netlify-cli'
+                            deployOutput = sh(script: "node_modules/.bin/netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN", returnStdout: true)
                         }
                     } else {
-                        echo "--- Running deploy on the Windows host machine ---"
-                        bat (script: """
-                            echo "--- Checking Netlify CLI version ---"
-                            npm install netlify-cli
-                            node_modules/.bin/netlify --version
-                            echo "--- Netlify CLI version checked ---"
-                            node_modules/.bin/netlify deploy --dir=build --prod --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN%
-                            echo "--- Deployment to Netlify is successful ---"
-                        """
-                        )
+                        echo "--- Running stage deploy on the Windows host machine ---"
+                        bat 'npm install netlify-cli'
+                        deployOutput = bat(script: "node_modules/.bin/netlify deploy --dir=build --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN%", returnStdout: true)
                     }
+                    def deployUrl = deployOutput.split('\n').find { it.contains('Deploy URL:') }?.split(' ')[2]?.trim()
+                    env.CI_ENVIRONMENT_URL_STAGE = deployUrl
+                    echo "Stage Deploy URL: ${env.CI_ENVIRONMENT_URL_STAGE}"
                 }
             }
         }
-        stage('Post-Deploy Tests') {
+
+        stage('E2E Test Stage Environment') {
             environment {
-                CI_ENVIRONMENT_URL = "https://eclectic-pie-67daae.netlify.app"
+                CI_ENVIRONMENT_URL = env.CI_ENVIRONMENT_URL_STAGE
+            }
+            steps {
+                script {
+                    if (isUnix()) {
+                        echo "--- Running E2E tests on a Linux Docker agent for Stage ---"
+                        docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
+                            sh '''
+                                npm ci
+                                npx playwright test
+                            '''
+                        }
+                    } else {
+                        echo "--- Running E2E tests on the Windows host machine for Stage ---"
+                            bat """
+                                npm ci
+                                npx playwright test
+                            """
+                    }
+                }
+            }
+            post {
+                always {
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report (Stage Deploy)', reportTitles: '', useWrapperFileDirectly: true])
+                }
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    input message: 'Approve to deploy to Production?', ok: 'Deploy'
+                }
+            }
+        }
+        
+        stage('Deploy Production') {
+            steps {
+                script {
+                    def deployOutput
+                    if (isUnix()) {
+                        echo "--- Running deploy on a Linux Docker agent ---"
+                        docker.image('node:18-alpine').inside {
+                            sh 'npm install netlify-cli'
+                            deployOutput = sh(script: "node_modules/.bin/netlify deploy --prod --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN", returnStdout: true)
+                        }
+                    } else {
+                        echo "--- Running deploy on the Windows host machine ---"
+                        bat 'npm install netlify-cli'
+                        deployOutput = bat(script: "node_modules/.bin/netlify deploy --dir=build --prod --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN%", returnStdout: true)
+                    }
+                    def deployUrl = deployOutput.split('\n').find { it.contains('Deploy URL:') }?.split(' ')[2]?.trim()
+                    env.CI_ENVIRONMENT_URL_PROD = deployUrl
+                    echo "Production Deploy URL: ${env.CI_ENVIRONMENT_URL_PROD}"
+                }
+            }
+        }
+        stage('Post-Deploy Tests Production') {
+            environment {
+                CI_ENVIRONMENT_URL = env.CI_ENVIRONMENT_URL_PROD
             }
             steps {
                 script {
