@@ -7,7 +7,7 @@ pipeline {
     }
 
     stages {
-        stage('Build and Test') {
+        stage('Build') {
             steps {
                 script {
                     if (isUnix()) {
@@ -35,8 +35,10 @@ pipeline {
                     }
                 }
             }
+        }
+        stage('Test') {
             parallel {
-                stage('Test') {
+                stage('Unit Test') {
                     steps {
                         script {
                             if (isUnix()) {
