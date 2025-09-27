@@ -103,16 +103,23 @@ pipeline {
                         echo "--- Running stage deploy on a Linux Docker agent ---"
                         docker.image('node:18-alpine').inside {
                             sh 'npm install netlify-cli'
-                            deployOutput = sh(script: "node_modules/.bin/netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN", returnStdout: true)
+                            deployOutput = sh(script: "node_modules/.bin/netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json", returnStdout: true)
                         }
                     } else {
                         echo "--- Running stage deploy on the Windows host machine ---"
                         bat 'npm install netlify-cli'
-                        deployOutput = bat(script: "node_modules/.bin/netlify deploy --dir=build --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN%", returnStdout: true)
+                        deployOutput = bat(script: "node_modules/.bin/netlify deploy --dir=build --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN% --json", returnStdout: true)
                     }
-                    def deployUrl = deployOutput.split('\n').find { it.contains('Deploy URL:') }?.split(' ')[2]?.trim()
-                    env.CI_ENVIRONMENT_URL_STAGE = deployUrl
-                    echo "Stage Deploy URL: ${env.CI_ENVIRONMENT_URL_STAGE}"
+                    def deployJson = readJSON text: deployOutput
+                    def deployUrl = deployJson.deploy_url
+                    if (deployUrl) {
+                        env.CI_ENVIRONMENT_URL_STAGE = deployUrl
+                        echo "Stage Deploy URL: ${env.CI_ENVIRONMENT_URL_STAGE}"
+                    } else {
+                        echo "WARNING: Could not find 'deploy_url' in the Netlify deploy JSON output for Stage."
+                        echo "Deploy Output: ${deployOutput}"
+                        error "Failed to extract deploy URL for Stage."
+                    }
                 }
             }
         }
@@ -163,16 +170,23 @@ pipeline {
                         echo "--- Running deploy on a Linux Docker agent ---"
                         docker.image('node:18-alpine').inside {
                             sh 'npm install netlify-cli'
-                            deployOutput = sh(script: "node_modules/.bin/netlify deploy --prod --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN", returnStdout: true)
+                            deployOutput = sh(script: "node_modules/.bin/netlify deploy --prod --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json", returnStdout: true)
                         }
                     } else {
                         echo "--- Running deploy on the Windows host machine ---"
                         bat 'npm install netlify-cli'
-                        deployOutput = bat(script: "node_modules/.bin/netlify deploy --dir=build --prod --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN%", returnStdout: true)
+                        deployOutput = bat(script: "node_modules/.bin/netlify deploy --dir=build --prod --site %NETLIFY_SITE_ID% --auth %NETLIFY_AUTH_TOKEN% --json", returnStdout: true)
                     }
-                    def deployUrl = deployOutput.split('\n').find { it.contains('Deploy URL:') }?.split(' ')[2]?.trim()
-                    env.CI_ENVIRONMENT_URL_PROD = deployUrl
-                    echo "Production Deploy URL: ${env.CI_ENVIRONMENT_URL_PROD}"
+                    def deployJson = readJSON text: deployOutput
+                    def deployUrl = deployJson.deploy_url
+                    if (deployUrl) {
+                        env.CI_ENVIRONMENT_URL_PROD = deployUrl
+                        echo "Production Deploy URL: ${env.CI_ENVIRONMENT_URL_PROD}"
+                    } else {
+                        echo "WARNING: Could not find 'deploy_url' in the Netlify deploy JSON output for Production."
+                        echo "Deploy Output: ${deployOutput}"
+                        error "Failed to extract deploy URL for Production."
+                    }
                 }
             }
         }
