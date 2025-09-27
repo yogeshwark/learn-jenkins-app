@@ -13,7 +13,6 @@ pipeline {
                         echo "--- Building custom Docker image from .devcontainer/Dockerfile ---"
                         // Build the Docker image from the .devcontainer folder
                         sh '''
-                            cd learn-jenkins-app
                             docker build -t "${CUSTOM_DOCKER_IMAGE}" -f .devcontainer/Dockerfile .
                         '''
                     } else {
