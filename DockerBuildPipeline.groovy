@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        CUSTOM_DOCKER_IMAGE = "my-app-dev:${BUILD_ID}" // Define a tag for your custom image
+        CUSTOM_DOCKER_IMAGE = "my-app-dev" // Define a tag for your custom image
     }
 
     stages {
