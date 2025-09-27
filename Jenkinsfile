@@ -106,7 +106,7 @@ pipeline {
                         echo "--- Running stage deploy on a Linux Docker agent using custom image ---"
                         docker.image("${CUSTOM_DOCKER_IMAGE}").inside {
                             // netlify-cli is already installed in the custom image
-                            deployOutput = sh(script: "netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json", returnStdout: true)
+                            deployOutput = sh(script: "npx netlify deploy --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json", returnStdout: true)
                         }
                     } else {
                         echo "--- Running stage deploy on the Windows host machine ---"
@@ -161,7 +161,7 @@ pipeline {
                         echo "--- Running deploy on a Linux Docker agent using custom image ---"
                         docker.image("${CUSTOM_DOCKER_IMAGE}").inside {
                             // netlify-cli is already installed in the custom image
-                            deployOutput = sh(script: "netlify deploy --prod --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json", returnStdout: true)
+                            deployOutput = sh(script: "npx netlify deploy --prod --dir=build --no-build --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --json", returnStdout: true)
                         }
                     } else {
                         echo "--- Running deploy on the Windows host machine ---"
