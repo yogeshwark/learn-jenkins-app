@@ -105,7 +105,9 @@ pipeline {
                                 echo "--- Checking Netlify CLI version ---"
                                 npm install netlify-cli
                                 npx netlify --version
+                                npx netlify deploy --dir=build --prod --site=$NETLIFLY_SITE_ID --auth=$NETLIFLY_AUTH_TOKEN
                                 echo "--- Netlify CLI version checked ---"
+                                echo "--- Deployment to Netlify is successful ---"
                             '''
                         }
                     } else {
