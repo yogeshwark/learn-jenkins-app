@@ -107,7 +107,7 @@ pipeline {
                                 npx netlify --version
                                 DEPLOY_OUTPUT=$(npx netlify deploy --dir=build --prod --site=$NETLIFLY_SITE_ID --auth=$NETLIFLY_AUTH_TOKEN)
                                 echo "$DEPLOY_OUTPUT"
-                                def deployedUrl = (DEPLOY_OUTPUT =~ /URL:\s*(.*)/)[0][1]
+                                def deployedUrl = (DEPLOY_OUTPUT =~ /URL:\\s*(.*)/)[0][1]
                                 env.DEPLOYED_URL = deployedUrl
                                 echo "Deployed URL: ${env.DEPLOYED_URL}"
                                 echo "--- Netlify CLI version checked ---"
@@ -130,7 +130,7 @@ pipeline {
                             echo "%DEPLOY_OUTPUT_ACCUMULATOR%"
                         """, returnStdout: true).trim()
 
-                        def deployedUrl = (deployOutput =~ /URL:\s*(.*)/)[0][1]
+                        def deployedUrl = (deployOutput =~ /URL:\\s*(.*)/)[0][1]
                         env.DEPLOYED_URL = deployedUrl
                         echo "Deployed URL: ${env.DEPLOYED_URL}"
                     }
