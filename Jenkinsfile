@@ -7,7 +7,7 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
+        stage('Build and Test') {
             steps {
                 script {
                     if (isUnix()) {
@@ -25,7 +25,7 @@ pipeline {
                     } else {
                         echo "--- Running build on the Windows host machine ---"
                         bat """
-                            echo "--- Running in the environment ---"
+                            echo "--- Running in the environment ---
                             node --version
                             npm --version
                             npm ci
@@ -35,8 +35,6 @@ pipeline {
                     }
                 }
             }
-        }
-        stage('Test and E2E Test') {
             parallel {
                 stage('Test') {
                     steps {
@@ -95,7 +93,7 @@ pipeline {
                 }
             }
         }
-        stage('Deploy Stage Environment') {
+        stage('Deploy to Stage') {
             steps {
                 script {
                     def deployOutput
@@ -121,15 +119,10 @@ pipeline {
                         error "Failed to extract deploy URL for Stage."
                     }
                 }
-            }
-        }
-
-        stage('E2E Test Stage Environment') {
-            environment {
-                CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_STAGE}"
-            }
-            steps {
                 script {
+                    environment {
+                        CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_STAGE}"
+                    }
                     if (isUnix()) {
                         echo "--- Running E2E tests on a Linux Docker agent for Stage ---"
                         docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
@@ -154,16 +147,11 @@ pipeline {
             }
         }
 
-        stage('Approval') {
+        stage('Deploy to Production') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
                     input message: 'Approve to deploy to Production?', ok: 'Deploy'
                 }
-            }
-        }
-        
-        stage('Deploy Production') {
-            steps {
                 script {
                     def deployOutput
                     if (isUnix()) {
@@ -188,14 +176,10 @@ pipeline {
                         error "Failed to extract deploy URL for Production."
                     }
                 }
-            }
-        }
-        stage('Post-Deploy Tests Production') {
-            environment {
-                CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_PROD}"
-            }
-            steps {
                 script {
+                    environment {
+                        CI_ENVIRONMENT_URL = "${CI_ENVIRONMENT_URL_PROD}"
+                    }
                     if (isUnix()) {
                         echo "--- Running Post-Deploy E2E tests on a Linux Docker agent ---"
                         docker.image('mcr.microsoft.com/playwright:v1.39.0-jammy').inside {
