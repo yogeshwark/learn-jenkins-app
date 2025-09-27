@@ -116,19 +116,23 @@ pipeline {
                         }
                     } else {
                         echo "--- Running deploy on the Windows host machine ---"
-                        bat """
+                        def deployOutput = bat (script: """
                             echo "--- Checking Netlify CLI version ---"
                             npm install netlify-cli
                             npx netlify --version
                             echo "--- Netlify CLI version checked ---"
+                            SET "DEPLOY_OUTPUT_ACCUMULATOR="
                             FOR /F "tokens=*" %%i IN ('npx netlify deploy --dir=build --prod --site=%NETLIFLY_SITE_ID% --auth=%NETLIFLY_AUTH_TOKEN%') DO (
                                 ECHO %%i
-                                ECHO %%i | findstr /C:"URL:" >nul && FOR /F "tokens=2 delims= " %%j IN ("%%i") DO SET DEPLOYED_URL=%%j
+                                SET "DEPLOY_OUTPUT_ACCUMULATOR=!DEPLOY_OUTPUT_ACCUMULATOR!%%i\n"
                             )
-                            env.DEPLOYED_URL = "%DEPLOYED_URL%"
-                            echo "Deployed URL: %DEPLOYED_URL%"
                             echo "--- Deployment to Netlify is successful ---"
-                        """
+                            echo "%DEPLOY_OUTPUT_ACCUMULATOR%"
+                        """, returnStdout: true).trim()
+
+                        def deployedUrl = (deployOutput =~ /URL:\s*(.*)/)[0][1]
+                        env.DEPLOYED_URL = deployedUrl
+                        echo "Deployed URL: ${env.DEPLOYED_URL}"
                     }
                 }
             }
