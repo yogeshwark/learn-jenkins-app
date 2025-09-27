@@ -152,7 +152,7 @@ pipeline {
             }
             post {
                 always {
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report-post-deploy', reportFiles: 'index.html', reportName: 'Playwright HTML Report (Post-Deploy)', reportTitles: '', useWrapperFileDirectly: true])
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report (Post-Deploy)', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
         }
