@@ -93,6 +93,10 @@ pipeline {
                     reuseNode true
                 }
             }
+            environment {
+                NETLIFY_SITE_ID = credentials('NETLIFY_SITE_ID')
+                NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+            }
             steps {
                 sh '''
                     echo "------Installing Netlify CLI------"
@@ -101,6 +105,9 @@ pipeline {
                     echo "------Checking Netlify CLI version------"
                     npx netlify --version
                     echo "------Netlify CLI version checked------"
+                    echo "------Deploying to Netlify------"
+                    npx netlify deploy --prod --dir=build
+                    echo "------Deployment completed------"
                 '''
             }
         }
