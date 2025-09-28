@@ -34,7 +34,7 @@ pipeline {
                 }
             }
             steps {
-                sh '''
+                sh '''ß
                     echo "------Running Unit Tests------"
                     npm test
                     echo "------Unit Tests completed------"
@@ -42,7 +42,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'test-resukts/junit.xml'
+                    junit 'test-results/junit.xml'
                 }
             }
         }
