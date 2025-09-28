@@ -102,7 +102,7 @@ pipeline {
                     npx netlify --version
                     echo "------Netlify CLI version checked------"
                     echo "------Deploying to Netlify------"
-                    npx netlify deploy --prod --dir=build
+                    npx netlify deploy --prod --dir=build --no-build
                     echo "------Deployment completed------"
                 '''
             }
