@@ -12,6 +12,7 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
+                    reuseNode true
                 }
             }
             steps {
@@ -31,10 +32,11 @@ pipeline {
             agent {
                 docker {
                     image 'node:18-alpine'
+                    reuseNode true
                 }
             }
             steps {
-                sh '''ß
+                sh '''
                     echo "------Running Unit Tests------"
                     npm test
                     echo "------Unit Tests completed------"
