@@ -53,13 +53,18 @@ pipeline {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
                 }
             }
             steps {
                 sh '''
                     echo "------Running Playwright E2E Tests------"
                     npm ci
+                    npm start &
+                    APP_PID=$!
+                    sleep 10 # Give the application some time to start
                     npx playwright test
+                    kill $APP_PID
                     echo "------Playwright E2E Tests completed------"
                 '''
             }
