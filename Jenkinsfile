@@ -82,6 +82,75 @@ pipeline {
             }
         }
 
+        stage('Deployment Staging') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            environment {
+                NETLIFY_SITE_ID = credentials('NETLIFY_SITE_ID')
+                NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+            }
+            steps {
+                sh '''
+                    echo "------Installing Netlify CLI------"
+                    npm install netlify-cli
+                    echo "------Netlify CLI installed------"
+                    echo "------Checking Netlify CLI version------"
+                    npx netlify --version
+                    echo "------Netlify CLI version checked------"
+                    echo "------Deploying to Netlify Staging------"
+                '''
+                script {
+                    def netlifyOutput = sh(script: 'npx netlify deploy --dir=build --no-build --json', returnStdout: true) // Deploy to staging without --prod
+                    echo "------Deployment Staging completed------"
+                    def deployJson = new groovy.json.JsonSlurperClassic().parseText(netlifyOutput)
+                    def deployUrl = deployJson.deploy_url
+                    if (deployUrl) {
+                        env.CI_ENVIRONMENT_STAGING_URL = deployUrl
+                        echo "CI_ENVIRONMENT_STAGING_URL set to: ${env.CI_ENVIRONMENT_STAGING_URL}"
+                    } else {
+                        error "Could not find deploy_url in Netlify deploy output for staging."
+                    }
+                }
+            }
+        }
+
+        stage('Post-Deployment E2E Tests (Staging)') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                }
+            }
+            environment {
+                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_STAGING_URL}"
+            }
+            steps {
+                sh '''
+                    echo "------Running Post-Deployment Playwright E2E Tests (Staging)------"
+                    echo "CI_ENVIRONMENT_URL: ${CI_ENVIRONMENT_URL}"
+                    npm ci
+                    npx playwright test
+                    echo "------Post-Deployment Playwright E2E Tests (Staging) completed------"
+                '''
+            }
+            post {
+                always {
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'playwright-report-staging',
+                        reportFiles: 'index.html',
+                        reportName: 'Post-Deployment Playwright Report (Staging)'
+                    ])
+                }
+            }
+        }
+
         stage('Deployment') {
             agent {
                 docker {
