@@ -102,19 +102,19 @@ pipeline {
                     npx netlify --version
                     echo "------Netlify CLI version checked------"
                     echo "------Deploying to Netlify------"
+                '''
+                script {
                     def netlifyOutput = sh(script: 'npx netlify deploy --prod --dir=build --no-build --json', returnStdout: true)
                     echo "------Deployment completed------"
-                    script {
-                        def deployJson = new groovy.json.JsonSlurperClassic().parseText(netlifyOutput)
-                        def deployUrl = deployJson.deploy_url
-                        if (deployUrl) {
-                            env.CI_ENVIRONMENT_URL = deployUrl
-                            echo "CI_ENVIRONMENT_URL set to: ${env.CI_ENVIRONMENT_URL}"
-                        } else {
-                            error "Could not find deploy_url in Netlify deploy output."
-                        }
+                    def deployJson = new groovy.json.JsonSlurperClassic().parseText(netlifyOutput)
+                    def deployUrl = deployJson.deploy_url
+                    if (deployUrl) {
+                        env.CI_ENVIRONMENT_URL = deployUrl
+                        echo "CI_ENVIRONMENT_URL set to: ${env.CI_ENVIRONMENT_URL}"
+                    } else {
+                        error "Could not find deploy_url in Netlify deploy output."
                     }
-                '''
+                }
             }
         }
 
