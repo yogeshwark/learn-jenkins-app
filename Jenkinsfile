@@ -102,9 +102,52 @@ pipeline {
                     npx netlify --version
                     echo "------Netlify CLI version checked------"
                     echo "------Deploying to Netlify------"
-                    npx netlify deploy --prod --dir=build --no-build
+                    def netlifyOutput = sh(script: 'npx netlify deploy --prod --dir=build --no-build --json', returnStdout: true)
                     echo "------Deployment completed------"
+                    script {
+                        def deployJson = new groovy.json.JsonSlurperClassic().parseText(netlifyOutput)
+                        def deployUrl = deployJson.deploy_url
+                        if (deployUrl) {
+                            env.CI_ENVIRONMENT_URL = deployUrl
+                            echo "CI_ENVIRONMENT_URL set to: ${env.CI_ENVIRONMENT_URL}"
+                        } else {
+                            error "Could not find deploy_url in Netlify deploy output."
+                        }
+                    }
                 '''
+            }
+        }
+
+        stage('Post-Deployment E2E Tests') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                    reuseNode true
+                }
+            }
+            environment {
+                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_URL}"
+            }
+            steps {
+                sh '''
+                    echo "------Running Post-Deployment Playwright E2E Tests------"
+                    echo "CI_ENVIRONMENT_URL: ${CI_ENVIRONMENT_URL}"
+                    npm ci
+                    npx playwright test
+                    echo "------Post-Deployment Playwright E2E Tests completed------"
+                '''
+            }
+            post {
+                always {
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Post-Deployment Playwright Report'
+                    ])
+                }
             }
         }
     }
