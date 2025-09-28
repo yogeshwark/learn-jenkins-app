@@ -46,5 +46,33 @@ pipeline {
                 }
             }
         }
+
+        stage('Playwright E2E Tests') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+                }
+            }
+            steps {
+                sh '''
+                    echo "------Running Playwright E2E Tests------"
+                    npm ci
+                    npx playwright test
+                    echo "------Playwright E2E Tests completed------"
+                '''
+            }
+            post {
+                always {
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Playwright Report'
+                    ])
+                }
+            }
+        }
     }
 }
