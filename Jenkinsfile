@@ -26,5 +26,25 @@ pipeline {
                 '''
             }
         }
+
+        stage('Unit Tests') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                }
+            }
+            steps {
+                sh '''
+                    echo "------Running Unit Tests------"
+                    npm test
+                    echo "------Unit Tests completed------"
+                '''
+            }
+            post {
+                always {
+                    junit 'test-resukts/junit.xml'
+                }
+            }
+        }
     }
 }
