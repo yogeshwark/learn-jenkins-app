@@ -8,15 +8,22 @@ pipeline {
             }
         }
 
-        stage('w/ docker') {
+        stage('Build Stage') {
             agent {
                 docker {
                     image 'node:18-alpine'
                 }
             }
             steps {
-                sh 'echo "With docker"'
-                sh 'npm --version'
+                sh '''
+                    echo "------Environment setting Docker container------"
+                    node -v
+                    npm -v
+                    echo "------Building the project------"
+                    npm ci
+                    npm run build
+                    echo "------Build completed------"
+                '''
             }
         }
     }
