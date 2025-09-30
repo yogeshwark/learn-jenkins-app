@@ -12,6 +12,9 @@ pipeline {
                 }
             }
             steps {
+                sh 'echo "Checking AWS CLI installation..."'
+                sh 'which aws'
+                sh 'ls -l $(which aws)'
                 sh 'aws --version'
             }
         }
