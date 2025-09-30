@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+    environment {
+        REACT_APP_VERSION = "1.0.$BUILD_ID"
+    }
     stages {
         stage('Build Stage') {
             agent {
