@@ -12,7 +12,15 @@ pipeline {
                 }
             }
             steps {
-                sh 'aws --version'
+                withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        echo "AWS CLI Version:"
+                        aws --version
+
+                        echo "S3 Buckets:"
+                        aws s3 ls
+                    '''
+                }
             }
         }
     }
