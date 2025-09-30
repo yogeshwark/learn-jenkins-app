@@ -154,7 +154,6 @@ pipeline {
             environment {
                 NETLIFY_SITE_ID = credentials('NETLIFY_SITE_ID')
                 NETLIFY_AUTH_TOKEN = credentials('netlify-token')
-                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_URL}"
             }
             steps {
                 sh '''
