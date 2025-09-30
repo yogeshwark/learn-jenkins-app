@@ -151,7 +151,17 @@ pipeline {
             }
         }
 
-        stage('Post-Deployment E2E Tests') {
+        stage('Approval Stage') {
+            steps {
+                script {
+                    timeout(time: 1, unit: 'HOURS') {
+                        input message: 'Approve deployment to production?'
+                    }
+                }
+            }
+        }
+
+        stage('Deployment Stage') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
