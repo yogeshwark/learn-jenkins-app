@@ -8,13 +8,10 @@ pipeline {
             agent {
                 docker {
                     image 'amazon/aws-cli'
-                    args '-u 0:0' // Run as root to avoid permission issues
+                    args '-u 0:0 --entrypoint=""' // Run as root and disable entrypoint
                 }
             }
             steps {
-                sh 'echo "Checking AWS CLI installation..."'
-                sh 'which aws'
-                sh 'ls -l $(which aws)'
                 sh 'aws --version'
             }
         }
