@@ -84,7 +84,6 @@ pipeline {
                 }
             }
             environment {
-                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_STAGING_URL}"
                 NETLIFY_SITE_ID = credentials('NETLIFY_SITE_ID')
                 NETLIFY_AUTH_TOKEN = credentials('netlify-token')
             }
@@ -105,6 +104,7 @@ pipeline {
                     def deployUrl = deployJson.deploy_url
                     if (deployUrl) {
                         env.CI_ENVIRONMENT_STAGING_URL = deployUrl
+                        env.CI_ENVIRONMENT_URL = deployUrl // Set CI_ENVIRONMENT_URL for Playwright tests
                         echo "CI_ENVIRONMENT_STAGING_URL set to: ${env.CI_ENVIRONMENT_STAGING_URL}"
                     } else {
                         error "Could not find deploy_url in Netlify deploy output for staging."
