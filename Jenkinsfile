@@ -2,12 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('w/o docker') {
-            steps {
-                sh 'echo "Without docker"'
-            }
-        }
-
         stage('Build Stage') {
             agent {
                 docker {
@@ -85,7 +79,7 @@ pipeline {
         stage('Deployment Staging') {
             agent {
                 docker {
-                    image 'node:18-alpine'
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                     reuseNode true
                 }
             }
@@ -110,25 +104,12 @@ pipeline {
                     def deployUrl = deployJson.deploy_url
                     if (deployUrl) {
                         env.CI_ENVIRONMENT_STAGING_URL = deployUrl
+                        env.CI_ENVIRONMENT_URL = deployUrl // Set CI_ENVIRONMENT_URL for Playwright tests
                         echo "CI_ENVIRONMENT_STAGING_URL set to: ${env.CI_ENVIRONMENT_STAGING_URL}"
                     } else {
                         error "Could not find deploy_url in Netlify deploy output for staging."
                     }
                 }
-            }
-        }
-
-        stage('Post-Deployment E2E Tests (Staging)') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-                    reuseNode true
-                }
-            }
-            environment {
-                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_STAGING_URL}"
-            }
-            steps {
                 sh '''
                     echo "------Running Post-Deployment Playwright E2E Tests (Staging)------"
                     echo "CI_ENVIRONMENT_URL: ${CI_ENVIRONMENT_URL}"
@@ -151,16 +132,27 @@ pipeline {
             }
         }
 
-        stage('Deployment') {
+        stage('Approval Stage') {
+            steps {
+                script {
+                    timeout(time: 1, unit: 'HOURS') {
+                        input message: 'Approve deployment to production?'
+                    }
+                }
+            }
+        }
+
+        stage('Deployment Stage') {
             agent {
                 docker {
-                    image 'node:18-alpine'
+                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
                     reuseNode true
                 }
             }
             environment {
                 NETLIFY_SITE_ID = credentials('NETLIFY_SITE_ID')
                 NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_URL}"
             }
             steps {
                 sh '''
@@ -184,20 +176,6 @@ pipeline {
                         error "Could not find deploy_url in Netlify deploy output."
                     }
                 }
-            }
-        }
-
-        stage('Post-Deployment E2E Tests') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-                    reuseNode true
-                }
-            }
-            environment {
-                CI_ENVIRONMENT_URL = "${env.CI_ENVIRONMENT_URL}"
-            }
-            steps {
                 sh '''
                     echo "------Running Post-Deployment Playwright E2E Tests------"
                     echo "CI_ENVIRONMENT_URL: ${CI_ENVIRONMENT_URL}"
