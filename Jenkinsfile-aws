@@ -1,0 +1,19 @@
+pipeline {
+    agent any
+    environment {
+        REACT_APP_VERSION = "1.0.$BUILD_ID"
+    }
+    stages {
+        stage('Check AWS CLI Version') {
+            agent {
+                docker {
+                    image 'amazon/aws-cli'
+                    args '-u 0:0' // Run as root to avoid permission issues
+                }
+            }
+            steps {
+                sh 'aws --version'
+            }
+        }
+    }
+}
