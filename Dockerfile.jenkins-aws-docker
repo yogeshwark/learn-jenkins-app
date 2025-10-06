@@ -1,20 +1,32 @@
-# Stage 1: Build Environment
-# Use a standard Amazon Linux 2023 image to install dependencies.
+# Stage 1: The builder stage, used to get all dependencies
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
 
-# Update packages and install jq and docker-client
-# Use dnf, as amazonlinux:2023 uses it by default.
+# Install jq and docker client into the builder environment
 RUN dnf update -y && \
     dnf install -y jq docker && \
     dnf clean all
 
-# Stage 2: Final Image
-# Use the minimal AWS CLI image as the final base.
+# Use ldd and cp to gather all dependencies into a single staging directory
+# We first find the shared library paths with ldd
+# Then, we use `cp -L` to copy the actual files (resolving symlinks)
+RUN mkdir -p /docker-runtime && \
+    DOCKER_DEPS=$(ldd /usr/bin/docker | awk '{print $3}' | grep -v '^$' | xargs) && \
+    cp -L /usr/bin/jq /usr/bin/docker $DOCKER_DEPS /docker-runtime/ && \
+    # The AWS CLI image is based on Amazon Linux 2023, which is 64-bit
+    # We must ensure the dynamic linker is also copied
+    cp -L /lib64/ld-linux-x86-64.so.2 /docker-runtime/
+
+# Stage 2: The final, minimal image
 FROM public.ecr.aws/aws-cli/aws-cli:2.15.11
 
-# Copy the binaries and dependencies from the builder stage.
-COPY --from=builder /usr/bin/jq /usr/bin/docker /usr/bin/
-COPY --from=builder /usr/lib64/libltdl.so.7 /usr/lib64/libltdl.so.7
+# Copy the binaries and libraries from the builder's staged directory
+# This command places all files into the root of the final image
+COPY --from=builder /docker-runtime/ /
 
-# Set the entrypoint to a shell for interactive use, useful for Jenkins.
+# The dynamic linker needs to be configured correctly in the final image.
+# We ensure the new binaries can find the copied libraries.
+# Also ensure the docker client can find the correct shared libraries.
+ENV LD_LIBRARY_PATH="/usr/lib64"
+
+# Set a safe entrypoint for command execution in Jenkins
 ENTRYPOINT ["/bin/bash"]
