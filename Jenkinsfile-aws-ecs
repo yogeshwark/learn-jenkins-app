@@ -52,8 +52,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
-                        aws ecs register-task-definition --cli-input-json file://aws/task-definition.json
-                        aws ecs update-service --cluster LearnJenkinsCluster --service Learn-Jenkins-Task-Definition-service-gmocq5rp --task-definition Learn-Jenkins-Task-Definition:2 --force-new-deployment
+                        echo "Deploying to AWS ECS..."
+                        yum install -y jq
+                        TASK_DEF_REV=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition.json | jq '.taskDefinition.revision')
+                        echo "New Task Definition Revision: $TASK_DEF_REV"
+                        aws ecs update-service --cluster LearnJenkinsCluster --service Learn-Jenkins-Task-Definition-service-gmocq5rp --task-definition Learn-Jenkins-Task-Definition:$TASK_DEF_REV" --force-new-deployment
                         echo "-----Task definition has regitered and service is updated successfully successfully with file://aws/task-definition.json----"
                     '''
                 }
