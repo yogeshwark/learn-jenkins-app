@@ -33,7 +33,7 @@ pipeline {
         stage('Build & Push Docker Image') {
             agent {
                 docker {
-                    image "jenkins-aws-docker-agent" // Using a pre-built custom agent image
+                    image 'amazon/aws-cli:2.13.2'
                     reuseNode true
                     args "-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=''"
                 }
@@ -41,18 +41,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
-                        echo "Starting Docker Image Build & Push Stage..."
+                        amazon-linux-extras install docker
                         echo "Checking Docker availability..."
                         docker info
-                        echo "Docker check completed."
-                        # Authenticate Docker to ECR
-                        # aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
                         # Build Docker image
                         docker build -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
-                        # Tag image for ECR
-                        # docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-                        # Push image to ECR
-                        # docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
                         echo "Docker Image Build & Push Stage Completed."
                     '''
                 }
@@ -61,7 +54,7 @@ pipeline {
         stage('Deploy to AWS ECS') {
             agent {
                 docker {
-                    image 'jenkins-aws-docker-agent'
+                    image 'amazon/aws-cli:2.13.2'
                     reuseNode true
                     args "-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=''"
                 }
