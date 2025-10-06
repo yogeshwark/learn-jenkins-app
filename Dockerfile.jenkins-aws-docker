@@ -1,13 +1,9 @@
-# Use a specific, stable base image
+# Inside Dockerfile.jenkins-aws-docker
 FROM docker:24.0.5-dind-rootless
 
-# Install AWS CLI and other required dependencies
-RUN apk update && apk add --no-cache \
-    python3 \
-    py3-pip \
-    bash \
-    curl \
-    docker-cli \
-    docker-compose
+# Install dependencies as root (temporarily)
+RUN apk update && apk add --no-cache python3 py3-pip bash curl docker-cli docker-compose
+RUN pip install --upgrade pip && pip install awscli && rm -rf /root/.cache/pip
 
-RUN pip install awscli
+# Switch to a non-privileged user for all subsequent commands
+USER jenkins
