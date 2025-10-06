@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+    environment {
+        REACT_APP_VERSION = "1.0.$BUILD_ID"
+        S3_BUCKET_NAME = "learn-jenkins-20252909" // Placeholder for S3 bucket name
+    }
+    stages {
+        stage('Build Website') {
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'echo "Starting Website Build Stage..."'
+                sh 'echo "Node Version:"'
+                sh 'node --version'
+                sh 'echo "NPM Version:"'
+                sh 'npm --version'
+                sh 'echo "Installing dependencies..."'
+                sh 'npm ci'
+                sh 'echo "Running build..."'
+                sh 'npm run build'
+                sh 'echo "Website Build Stage Completed."'
+            }
+        }
+        stage('Check AWS CLI Version') {
+            agent {
+                docker {
+                    image 'amazon/aws-cli'
+                    args '-u 0:0 --entrypoint=""' // Run as root and disable entrypoint
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        echo "AWS CLI Version:"
+                        aws --version
+                    '''
+                }
+            }
+        }
+        stage('Deploy to AWS ECS') {
+            agent {
+                docker {
+                    image 'amazon/aws-cli'
+                    args '-u 0:0 --entrypoint=""'
+                    reuseNode true
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        aws ecs register-task-definition --cli-input-json file://aws/task-definition.json
+                        echo "-----Task definition has regitered successfully with file://aws/task-definition.json----"
+                    '''
+                }
+            }
+        }
+    }
+}
