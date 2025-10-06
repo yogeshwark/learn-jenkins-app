@@ -1,9 +1,16 @@
 # Inside Dockerfile.jenkins-aws-docker
 FROM docker:latest
 
-# Install dependencies as root (temporarily)
-RUN apk update && apk add --no-cache python3 py3-pip bash curl docker-cli docker-compose
-RUN pip install --upgrade pip && pip install awscli && rm -rf /root/.cache/pip
+# Install dependencies using Alpine's apk
+RUN apk update && apk add --no-cache \
+    python3 \
+    py3-pip \
+    bash \
+    curl \
+    docker-cli \
+    docker-compose
 
-# Switch to a non-privileged user for all subsequent commands
-USER jenkins
+# Install AWS CLI and clean up, using the override flag
+RUN pip install --upgrade pip && \
+    pip install awscli --break-system-packages && \
+    rm -rf /root/.cache/pip
