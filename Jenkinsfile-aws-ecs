@@ -54,33 +54,17 @@ pipeline {
                 }
             }
         }
-        stage('Check AWS CLI Version') {
-            agent {
-                docker {
-                    image 'amazon/aws-cli'
-                    args '-u 0:0 --entrypoint=""' // Run as root and disable entrypoint
-                }
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
-                    sh '''
-                        echo "AWS CLI Version:"
-                        aws --version
-                    '''
-                }
-            }
-        }
         stage('Deploy to AWS ECS') {
             agent {
                 docker {
-                    image 'amazon/aws-cli'
-                    args '-u 0:0 --entrypoint=""'
+                    image 'jenkins-aws-docker-agent:latest'
                     reuseNode true
                 }
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
+                        echo "AWS CLI Version:"
                         aws --version
                         
                         # Update task definition with new image
