@@ -4,4 +4,4 @@
 # Stage 2: Serve the built application with Nginx
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY --from=0 /build /usr/share/nginx/html
+COPY /build /usr/share/nginx/html
