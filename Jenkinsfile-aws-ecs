@@ -42,6 +42,9 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
                         echo "Starting Docker Image Build & Push Stage..."
+                        echo "Checking Docker availability..."
+                        docker info
+                        echo "Docker check completed."
                         # Authenticate Docker to ECR
                         # aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
                         # Build Docker image
