@@ -1,12 +1,20 @@
-# Use the specified AWS CLI image version
+# Stage 1: Build Environment
+# Use a standard Amazon Linux 2023 image to install dependencies.
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
+
+# Update packages and install jq and docker-client
+# Use dnf, as amazonlinux:2023 uses it by default.
+RUN dnf update -y && \
+    dnf install -y jq docker && \
+    dnf clean all
+
+# Stage 2: Final Image
+# Use the minimal AWS CLI image as the final base.
 FROM public.ecr.aws/aws-cli/aws-cli:2.15.11
 
-# The AWS CLI image is based on a minimal Amazon Linux 2023.
-# For package management, use microdnf, which is included by default.
-RUN microdnf update -y && \
-    microdnf install -y jq docker && \
-    microdnf clean all
+# Copy the binaries and dependencies from the builder stage.
+COPY --from=builder /usr/bin/jq /usr/bin/docker /usr/bin/
+COPY --from=builder /usr/lib64/libltdl.so.7 /usr/lib64/libltdl.so.7
 
-# Set the entrypoint to a shell to keep the container running
+# Set the entrypoint to a shell for interactive use, useful for Jenkins.
 ENTRYPOINT ["/bin/bash"]
-# This Dockerfile creates a custom Jenkins agent image with AWS CLI, jq, and Docker installed.
