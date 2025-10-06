@@ -5,6 +5,9 @@ pipeline {
         AWS_DEFAULT_REGION = "eu-north-1"
         ECS_CLUSTER_NAME = "LearnJenkinsCluster"
         ECS_SERVICE_NAME = "Learn-Jenkins-Task-Definition-service-gmocq5rp"
+        ECR_REPOSITORY_NAME = "learn-jenkins-app"
+        IMAGE_TAG = "1.0.$BUILD_ID"
+        AWS_ACCOUNT_ID = "YOUR_AWS_ACCOUNT_ID" // TODO: Replace with your actual AWS Account ID
     }
     stages {
         stage('Build Website') {
@@ -25,6 +28,30 @@ pipeline {
                 sh 'echo "Running build..."'
                 sh 'npm run build'
                 sh 'echo "Website Build Stage Completed."'
+            }
+        }
+        stage('Build & Push Docker Image') {
+            agent {
+                docker {
+                    image "jenkins-aws-docker-agent:latest" // Using a pre-built custom agent image
+                    reuseNode true
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        echo "Starting Docker Image Build & Push Stage..."
+                        # Authenticate Docker to ECR
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+                        # Build Docker image
+                        docker build -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} learn-jenkins-app/.
+                        # Tag image for ECR
+                        docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+                        # Push image to ECR
+                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+                        echo "Docker Image Build & Push Stage Completed."
+                    '''
+                }
             }
         }
         stage('Check AWS CLI Version') {
@@ -55,8 +82,12 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'aws-auth', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
                         aws --version
-                        yum install jq -y
-                        LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition.json | jq '.taskDefinition.revision')
+                        
+                        # Update task definition with new image
+                        TASK_DEFINITION_JSON=$(aws ecs describe-task-definition --task-definition Learn-Jenkins-Task-Definition --query taskDefinition --output json)
+                        UPDATED_TASK_DEFINITION_JSON=$(echo $TASK_DEFINITION_JSON | jq --arg IMAGE "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.compatibilities) | del(.requiresAttributes) | del(.registeredAt) | del(.registeredBy)')
+                        
+                        LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json "$UPDATED_TASK_DEFINITION_JSON" | jq '.taskDefinition.revision')
                         echo $LATEST_TD_REVISION
                         aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition Learn-Jenkins-Task-Definition:$LATEST_TD_REVISION
                         aws ecs wait services-stable --cluster ${ECS_CLUSTER_NAME} --services ${ECS_SERVICE_NAME}

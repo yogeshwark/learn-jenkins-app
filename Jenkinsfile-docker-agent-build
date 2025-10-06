@@ -1,0 +1,14 @@
+pipeline {
+    agent any
+    environment {
+        CUSTOM_DOCKER_AGENT_IMAGE = "jenkins-aws-docker-agent:$BUILD_ID"
+    }
+    stages {
+        stage('Build Custom Docker Agent Image') {
+            agent any
+            steps {
+                sh "docker build -t ${CUSTOM_DOCKER_AGENT_IMAGE} -f learn-jenkins-app/Dockerfile.jenkins-aws-docker ."
+            }
+        }
+    }
+}
