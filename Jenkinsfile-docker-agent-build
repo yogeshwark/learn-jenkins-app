@@ -7,7 +7,7 @@ pipeline {
         stage('Build Custom Docker Agent Image') {
             agent any
             steps {
-                sh "docker build -t ${CUSTOM_DOCKER_AGENT_IMAGE} -f learn-jenkins-app/Dockerfile.jenkins-aws-docker ."
+                sh "docker build -t ${CUSTOM_DOCKER_AGENT_IMAGE} -f Dockerfile.jenkins-aws-docker ."
             }
         }
     }
