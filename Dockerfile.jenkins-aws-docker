@@ -1,11 +1,12 @@
-# Use a specific, stable version of the AWS CLI image
+# Use the specified AWS CLI image version
 FROM public.ecr.aws/aws-cli/aws-cli:2.15.11
 
-# The AWS CLI image is based on Amazon Linux 2023, which uses 'dnf'
-# Dnf has replaced 'yum' and 'amazon-linux-extras'
-RUN dnf update -y && \
-    dnf install -y jq docker && \
-    dnf clean all
-    
+# The AWS CLI image is based on a minimal Amazon Linux 2023.
+# For package management, use microdnf, which is included by default.
+RUN microdnf update -y && \
+    microdnf install -y jq docker && \
+    microdnf clean all
+
 # Set the entrypoint to a shell to keep the container running
 ENTRYPOINT ["/bin/bash"]
+# This Dockerfile creates a custom Jenkins agent image with AWS CLI, jq, and Docker installed.
