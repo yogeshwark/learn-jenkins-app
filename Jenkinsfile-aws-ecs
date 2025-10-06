@@ -3,6 +3,8 @@ pipeline {
     environment {
         REACT_APP_VERSION = "1.0.$BUILD_ID"
         AWS_DEFAULT_REGION = "eu-north-1"
+        ECS_CLUSTER_NAME = "LearnJenkinsCluster"
+        ECS_SERVICE_NAME = "Learn-Jenkins-Task-Definition-service-gmocq5rp"
     }
     stages {
         stage('Build Website') {
@@ -56,7 +58,9 @@ pipeline {
                         yum install jq -y
                         LATEST_TD_REVISION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition.json | jq '.taskDefinition.revision')
                         echo $LATEST_TD_REVISION
-                        aws ecs update-service --cluster LearnJenkinsCluster --service Learn-Jenkins-Task-Definition-service-gmocq5rp --task-definition Learn-Jenkins-Task-Definition:$LATEST_TD_REVISION
+                        aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition Learn-Jenkins-Task-Definition:$LATEST_TD_REVISION
+                        aws ecs wait services-stable --cluster ${ECS_CLUSTER_NAME} --services ${ECS_SERVICE_NAME}
+                        echo "Deployment to AWS ECS Completed."
                     '''
                 }
             }
