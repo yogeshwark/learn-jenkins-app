@@ -1,3 +1,11 @@
-FROM amazon/aws-cli:2.13.2
-RUN amazon-linux-extras install docker
-RUN yum install jq -y
+# Use a specific, stable version of the AWS CLI image
+FROM public.ecr.aws/aws-cli/aws-cli:2.15.11
+
+# The AWS CLI image is based on Amazon Linux 2023, which uses 'dnf'
+# Dnf has replaced 'yum' and 'amazon-linux-extras'
+RUN dnf update -y && \
+    dnf install -y jq docker && \
+    dnf clean all
+    
+# Set the entrypoint to a shell to keep the container running
+ENTRYPOINT ["/bin/bash"]
